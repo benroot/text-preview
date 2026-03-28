@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Message Preview</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f2f2f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #000;
+    }
+
+    .app {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 2rem 1.5rem;
+    }
+
+    .editor-pane label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 0.5px solid #ccc;
+      background: #fff;
+      color: #000;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #999;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .copy-btn {
+      font-size: 13px;
+      padding: 5px 14px;
+      border-radius: 8px;
+      border: 0.5px solid #ccc;
+      background: #fff;
+      color: #000;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .copy-btn:hover { background: #f2f2f7; }
+    .copy-btn:active { transform: scale(0.97); }
+    .copy-btn.copied { color: #28a745; border-color: #28a745; }
+
+    .preview-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .preview-pane {
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone {
+      width: 320px;
+      background: #e5e5ea;
+      border-radius: 36px;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .screen {
+      background: #fff;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+
+    .phone-header {
+      background: #f2f2f7;
+      padding: 12px 16px 10px;
+      border-bottom: 0.5px solid #ddd;
+      text-align: center;
+    }
+
+    .phone-header .ph-label {
+      margin: 0;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .phone-header .ph-name {
+      margin: 2px 0 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+    }
+
+    .messages {
+      padding: 14px 12px;
+      min-height: 80px;
+    }
+
+    .bubble-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .bubble {
+      background: #248bf5;
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      padding: 9px 13px;
+      max-width: 82%;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .delivered {
+      font-size: 11px;
+      color: #aaa;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="editor-pane">
+      <label for="msgbox">message</label>
+      <textarea id="msgbox">To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them. To die—to sleep,
+No more; and by a sleep to say we end
+The heart-ache and the thousand natural shocks
+That flesh is heir to: 'tis a consummation
+Devoutly to be wish'd. To die, to sleep;
+To sleep, perchance to dream—ay, there's the rub:
+For in that sleep of death what dreams may come,
+When we have shuffled off this mortal coil,
+Must give us pause—there's the respect
+That makes calamity of so long life.
+</textarea>
+      <div class="toolbar">
+        <button class="copy-btn" id="clearBtn">Clear</button>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      </div>
+    </div>
+
+    <div>
+      <p class="preview-label">preview</p>
+      <div class="preview-pane">
+        <div class="phone">
+          <div class="screen">
+            <div class="phone-header">
+              <p class="ph-label">group chat</p>
+              <p class="ph-name">FM Residents</p>
+            </div>
+            <div class="messages">
+              <div class="bubble-wrap">
+                <div class="bubble" id="bubble"></div>
+                <p class="delivered">delivered</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('msgbox');
+    const bubble = document.getElementById('bubble');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function update() {
+      bubble.textContent = textarea.value;
+    }
+
+    textarea.addEventListener('input', update);
+    update();
+
+    const clearBtn = document.getElementById('clearBtn');
+
+    clearBtn.addEventListener('click', () => {
+      textarea.value = '';
+      update();
+      textarea.focus();
+    });
+
+    ('click', () => {
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (e) {}
+
+      if (!success && navigator.clipboard) {
+        navigator.clipboard.writeText(textarea.value).catch(() => {});
+        success = true;
+      }
+
+      if (success) {
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.classList.remove('copied');
+          window.getSelection().removeAllRanges();
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>
